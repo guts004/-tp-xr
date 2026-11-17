@@ -57,6 +57,250 @@
     <a-text position="0 2.55 -2.93" width="2.2" align="center" color="#ffd54f"
             value="Prototype pédagogique - pas un dispositif médical"></a-text>
   </a-entity>
+  <!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP2 - Etape D : interactions (teleportation, saisie, depot)</title>
+<!-- Version figée : on note toujours la version utilisée (reproductibilité) -->
+<script src="https://cdn.jsdelivr.net/npm/aframe@1.7.1/dist/aframe-v1.7.1.min.js"></script>
+<style>
+  #hud { position: fixed; bottom: 8px; left: 8px; right: 8px; z-index: 10; pointer-events: none;
+         font: 600 16px system-ui, sans-serif; color: #fff; text-shadow: 0 0 4px #000, 0 0 4px #000; }
+</style>
+</head>
+<body>
+<div id="hud">Visez un instrument avec le point blanc, touchez l'écran pour le prendre.</div>
+
+<a-scene id="scene" vr-mode-ui="enabled: false" renderer="antialias: true">
+
+  <!-- ============ BLOC 1 : ENVIRONNEMENT (organisé par fonction) ============ -->
+  <a-entity id="Environnement">
+    <a-sky color="#9ec9ee"></a-sky>
+    <a-entity light="type: ambient; intensity: 0.7"></a-entity>
+    <a-entity light="type: directional; intensity: 0.8" position="1 4 2"></a-entity>
+
+    <!-- Sol (6 m x 6 m). Touchez-le pour vous téléporter. -->
+    <a-plane id="Sol" class="interactif" teleport-sol rotation="-90 0 0" width="6" height="6"
+             material="color: #c9c9c9; roughness: 0.9"></a-plane>
+
+    <!-- Murs (hauteur 3 m) -->
+    <a-plane position="0 1.5 -3" width="6" height="3" material="color: #e8eef5"></a-plane>
+    <a-plane position="-3 1.5 0" rotation="0 90 0" width="6" height="3" material="color: #e8eef5"></a-plane>
+    <a-plane position="3 1.5 0" rotation="0 -90 0" width="6" height="3" material="color: #e8eef5"></a-plane>
+    <a-plane position="0 1.5 3" rotation="0 180 0" width="6" height="3" material="color: #e8eef5"></a-plane>
+
+    <!-- Table A : instruments (plateau à 0,75 m du sol, comme une vraie table) -->
+    <a-entity id="Table_A" position="-0.6 0 -1">
+      <a-box position="0 0.725 0" width="1" height="0.05" depth="0.6" material="color: #8d6e63; roughness: 0.8"></a-box>
+      <a-box position="-0.45 0.35 -0.25" width="0.05" height="0.7" depth="0.05" color="#5d4037"></a-box>
+      <a-box position="0.45 0.35 -0.25" width="0.05" height="0.7" depth="0.05" color="#5d4037"></a-box>
+      <a-box position="-0.45 0.35 0.25" width="0.05" height="0.7" depth="0.05" color="#5d4037"></a-box>
+      <a-box position="0.45 0.35 0.25" width="0.05" height="0.7" depth="0.05" color="#5d4037"></a-box>
+    </a-entity>
+
+    <!-- Table B : plateau avec 3 zones de dépôt -->
+    <a-entity id="Table_B" position="0.6 0 -1">
+      <a-box position="0 0.725 0" width="1" height="0.05" depth="0.6" material="color: #eceff1; roughness: 0.5"></a-box>
+      <a-box position="-0.45 0.35 -0.25" width="0.05" height="0.7" depth="0.05" color="#90a4ae"></a-box>
+      <a-box position="0.45 0.35 -0.25" width="0.05" height="0.7" depth="0.05" color="#90a4ae"></a-box>
+      <a-box position="-0.45 0.35 0.25" width="0.05" height="0.7" depth="0.05" color="#90a4ae"></a-box>
+      <a-box position="0.45 0.35 0.25" width="0.05" height="0.7" depth="0.05" color="#90a4ae"></a-box>
+    </a-entity>
+
+    <!-- Panneau de mission ancré dans le monde (pas collé à la tête) -->
+    <a-plane position="0 2.0 -2.95" width="2.4" height="0.9" material="color: #1b2a41; shader: flat"></a-plane>
+    <a-text id="Panneau" position="0 2.0 -2.93" width="2.2" align="center" color="#ffffff"
+            value="Salle de formation\nPlacez chaque instrument\ndans sa zone."></a-text>
+    <a-text position="0 2.55 -2.93" width="2.2" align="center" color="#ffd54f"
+            value="Prototype pédagogique - pas un dispositif médical"></a-text>
+  </a-entity>
+
+  <!-- ============ BLOC 2 : INSTRUMENTS (posés sur la Table A, coordonnées monde) ============ -->
+  <!-- Chaque instrument connaît sa zone cible (attribut zone). -->
+  <a-entity id="Instruments">
+    <a-cylinder id="Seringue" class="interactif" instrument="nom: Seringue; zone: zone-seringue"
+                position="-0.9 0.775 -1" rotation="0 0 90" radius="0.025" height="0.18"
+                material="color: #4fc3f7"></a-cylinder>
+    <a-torus id="Stethoscope" class="interactif" instrument="nom: Stéthoscope; zone: zone-stethoscope"
+             position="-0.6 0.765 -1" rotation="-90 0 0" radius="0.07" radius-tubular="0.015"
+             material="color: #455a64"></a-torus>
+    <a-box id="Thermometre" class="interactif" instrument="nom: Thermomètre; zone: zone-thermometre"
+           position="-0.3 0.765 -1" width="0.04" height="0.03" depth="0.16"
+           material="color: #e53935"></a-box>
+  </a-entity>
+
+  <!-- ============ BLOC 3 : ZONES DE DEPOT (sur la Table B) ============ -->
+  <!-- Ordre volontairement différent de la Table A : il faut lire les étiquettes. -->
+  <a-entity id="Zones">
+    <a-box id="zone-thermometre" class="interactif" zone-depot="nom: Thermomètre"
+           position="0.3 0.755 -1" width="0.26" height="0.01" depth="0.3"
+           material="color: #fff59d; opacity: 0.8"></a-box>
+    <a-text position="0.3 0.8 -1.2" width="0.8" align="center" color="#263238" value="Thermomètre"></a-text>
+
+    <a-box id="zone-seringue" class="interactif" zone-depot="nom: Seringue"
+           position="0.6 0.755 -1" width="0.26" height="0.01" depth="0.3"
+           material="color: #fff59d; opacity: 0.8"></a-box>
+    <a-text position="0.6 0.8 -1.2" width="0.8" align="center" color="#263238" value="Seringue"></a-text>
+
+    <a-box id="zone-stethoscope" class="interactif" zone-depot="nom: Stéthoscope"
+           position="0.9 0.755 -1" width="0.26" height="0.01" depth="0.3"
+           material="color: #fff59d; opacity: 0.8"></a-box>
+    <a-text position="0.9 0.8 -1.2" width="0.8" align="center" color="#263238" value="Stéthoscope"></a-text>
+  </a-entity>
+
+  <!-- ============ BLOC 4 : XR ORIGIN (rig) + caméra + curseur ============ -->
+  <!-- On déplace le RIG, jamais la caméra seule. wasd : test sur ordinateur. -->
+  <a-entity id="rig" position="0 0 0.8" wasd-controls="acceleration: 15">
+    <!-- Hauteur des yeux : 1,6 m (personne debout) -->
+    <a-entity id="tete" camera position="0 1.6 0" look-controls>
+      <a-entity id="curseur" cursor="fuse: false" raycaster="objects: .interactif; far: 8"
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.012; radiusOuter: 0.02"
+                material="color: #ffffff; shader: flat; opacity: 0.9"></a-entity>
+    </a-entity>
+  </a-entity>
+
+</a-scene>
+
+<script>
+/* ===================== ETAT GLOBAL DE LA MISSION ===================== */
+const etat = {
+  selection: null,   // instrument actuellement tenu
+  places: 0,         // instruments bien placés
+  total: 3,
+  erreurs: 0
+};
+
+const hud = document.getElementById('hud');
+function message(txt) { hud.textContent = txt; }
+
+function majPanneau() {
+  const panneau = document.getElementById('Panneau');
+  if (etat.places === etat.total) {
+    panneau.setAttribute('value',
+      'Mission terminée !\n' + etat.total + '/' + etat.total + ' instruments placés\nErreurs : ' + etat.erreurs);
+  } else {
+    panneau.setAttribute('value',
+      'Salle de formation\nPlacés : ' + etat.places + '/' + etat.total + '\nErreurs : ' + etat.erreurs);
+  }
+}
+
+// Le raycaster doit "oublier" un objet qui n'a plus la classe .interactif
+function rafraichirRaycaster() {
+  const c = document.getElementById('curseur');
+  if (c && c.components.raycaster) c.components.raycaster.refreshObjects();
+}
+
+/* ===================== 1. TELEPORTATION SUR LE SOL ===================== */
+AFRAME.registerComponent('teleport-sol', {
+  init: function () {
+    const rig = document.getElementById('rig');
+    const limite = 2.7; // on reste à 30 cm des murs (salle de 6 m)
+    const borner = v => Math.max(-limite, Math.min(limite, v));
+
+    this.el.addEventListener('click', function (e) {
+      const inter = e.detail && e.detail.intersection;
+      if (!inter) return;
+      const p = inter.point; // point touché, en coordonnées monde
+      // On déplace le RIG (jamais la caméra), et on garde y = 0 (au sol)
+      rig.object3D.position.set(borner(p.x), 0, borner(p.z));
+    });
+  }
+});
+
+/* ===================== 2. INSTRUMENT : prendre / relâcher ===================== */
+AFRAME.registerComponent('instrument', {
+  schema: {
+    nom:  { type: 'string' },
+    zone: { type: 'string' }   // id de la zone correcte
+  },
+  init: function () {
+    this.origine = this.el.object3D.position.clone();
+    this.place = false;
+    this.el.addEventListener('click', () => this.prendre());
+  },
+  prendre: function () {
+    if (this.place) return;
+    // Un seul instrument tenu à la fois
+    if (etat.selection && etat.selection !== this.el) {
+      etat.selection.components.instrument.relacher();
+    }
+    etat.selection = this.el;
+    // Retour visuel : l'objet se soulève et grossit
+    this.el.object3D.position.y = this.origine.y + 0.08;
+    this.el.object3D.scale.set(1.3, 1.3, 1.3);
+    message('Vous tenez : ' + this.data.nom + '. Visez sa zone sur la table B et touchez.');
+  },
+  relacher: function () {
+    this.el.object3D.position.copy(this.origine);
+    this.el.object3D.scale.set(1, 1, 1);
+    if (etat.selection === this.el) etat.selection = null;
+  },
+  deposer: function (zoneEl) {
+    const p = zoneEl.object3D.position;
+    // Même hauteur de plateau sur les deux tables : on garde le y d'origine
+    this.el.object3D.position.set(p.x, this.origine.y, p.z);
+    this.el.object3D.scale.set(1, 1, 1);
+    this.place = true;
+    this.el.classList.remove('interactif'); // on ne peut plus le reprendre
+    etat.selection = null;
+    rafraichirRaycaster();
+  }
+});
+
+/* ===================== 3. ZONE DE DEPOT : vérifier ===================== */
+AFRAME.registerComponent('zone-depot', {
+  schema: { nom: { type: 'string' } },
+  init: function () {
+    this.occupee = false;
+    this.el.addEventListener('click', () => this.recevoir());
+  },
+  recevoir: function () {
+    const inst = etat.selection;
+    if (!inst) {
+      message('Prenez d\'abord un instrument sur la table A.');
+      return;
+    }
+    if (this.occupee) {
+      message('Cette zone est déjà occupée.');
+      return;
+    }
+    const comp = inst.components.instrument;
+
+    if (comp.data.zone === this.el.id) {
+      // ---- Bonne zone ----
+      comp.deposer(this.el);
+      this.occupee = true;
+      this.el.setAttribute('material', 'color', '#66bb6a');
+      this.el.classList.remove('interactif');
+      rafraichirRaycaster();
+      etat.places++;
+      majPanneau();
+      if (etat.places === etat.total) {
+        message('Bravo ! Tous les instruments sont à leur place (erreurs : ' + etat.erreurs + ').');
+      } else {
+        message('Correct : ' + comp.data.nom + ' est bien placé. Instrument suivant !');
+      }
+    } else {
+      // ---- Mauvaise zone : flash rouge puis retour à la couleur normale ----
+      etat.erreurs++;
+      majPanneau();
+      const el = this.el;
+      el.setAttribute('material', 'color', '#ef5350');
+      setTimeout(() => { if (!this.occupee) el.setAttribute('material', 'color', '#fff59d'); }, 600);
+      message('Non : ici c\'est la zone « ' + this.data.nom + ' ». Essayez une autre zone.');
+    }
+  }
+});
+
+/* Affichage initial du panneau */
+document.getElementById('scene').addEventListener('loaded', majPanneau);
+</script>
+</body>
+</html>
+  
 
   <!-- ============ BLOC 4 : XR ORIGIN (rig) + caméra + curseur ============ -->
   <!-- On déplace le RIG, jamais la caméra seule. wasd : test sur ordinateur. -->
